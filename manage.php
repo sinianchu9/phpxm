@@ -1,0 +1,122 @@
+<?php
+include("header.php");
+include("include/checkSession.php");
+$userid=$_SESSION['id'];
+$ad_type="buy";
+if($_GET['ad_type']){
+	$ad_type=$_GET['ad_type'];
+}
+if($ad_type=='sell'){
+	$Adtitle=Selling;
+}elseif($ad_type=='buy'){
+	$Adtitle=Buying;
+}
+
+
+//$pay_type=$_GET['pay_type'];
+//
+//if($pay_type!=""){
+//	$where = $where." and pay_type='".trim($pay_type)."'";
+//}
+
+$perNumber = 20; // 每页显示的记录数
+$page = $_GET ['page']; // 获得当前的页面值
+$count = mysql_query ( "select count(*) from advertise where userid=".$userid." and ad_type='".$ad_type."'" ); // 获得记录总数
+
+$rs = mysql_fetch_array ( $count );
+$totalNumber = $rs [0];
+
+$totalPage = ceil ( $totalNumber / $perNumber ); // 计算出总页数
+if (! isset ( $page )) {
+	$page = 1;
+} // 如果没有值,则赋值1
+$startCount = ($page - 1) * $perNumber; // 分页开始,根据此方法计算出开始的记录
+
+// 根据前面的计算出开始的记录和记录数
+$sql="select * from advertise where userid=".$userid." and ad_type='".$ad_type."' order by id desc limit $startCount,$perNumber";
+$res=mysql_query($sql);
+
+//echo $sql;
+if($_GET['show']!=""){
+	if(useridOFid($_GET['id'])!=$_SESSION['id']){
+		echo "<script>alert ('".Error.Illegalrequest."');</script>";
+		echo "<script language='javascript'>window.location.href='/index.html';</script>";
+		exit();
+	}
+	mysql_query("update advertise set is_show=".$_GET['show']." where id=".$_GET['id']);
+	echo "<script language='javascript'>window.location.href='/manage/".$_GET['ad_type'].".html';</script>";
+}
+
+?>
+
+
+<div class="container mainbody">
+	<div class="tabs clear-float">
+		<div class="tab <?php if($ad_type=='buy'){?>actived<?php }?>" id="buyid"><?php echo Buying?></div>
+		<div class="tab <?php if($ad_type=='sell'){?>actived<?php }?>" id="sellid"><?php echo Selling?></div>
+	</div>
+	<div class="myad">
+		<?php if($totalNumber>0){
+			while($row=mysql_fetch_array ( $res ) ){
+		?>
+			<div class="myad_list">
+				<div class="left">
+					<div><?php echo Adtype?>：<?php if($row['ad_type']=='buy'){ echo BuyBtn; }elseif($row['ad_type']=='sell'){ echo SellBtn; }?></div>
+					<div><?php echo Price?>：<?php echo ADpriceNow($row['id']);?>CNY</div>
+					<div><?php echo Marginrate?>：<?php echo floatval($row['margin_price']);?>%</div>
+					<div><?php if($row['is_show']==0){ echo "<span class='label label-danger'>".Disabled."</span>";}elseif($row['is_show']==1){ echo "<span class='label label-success'>".Published."</span>";}?></div>
+				</div>
+				<div class="right">
+					<div><a class="btn btn-primary btn-sm" href="/advertise/<?php echo $row['id'];?>.html"><?php echo Edit?></a> </div>
+					<div><?php if($row['is_show']==0){ ?><a class="btn btn-primary btn-sm" href="/manage/<?php echo $row['id'];?>/<?php echo $ad_type;?>/1.html"><?php echo Reopen?></a><?php }elseif($row['is_show']==1){ ?><a class="btn btn-primary btn-sm" href="/manage/<?php echo $row['id'];?>/<?php echo $ad_type;?>/0.html"><?php echo ClosedAd?></a><?php }?></div>
+				</div>
+				<div class="clear"></div>
+			</div>
+		<?php }?>
+		<?php }else{?>
+		<div class="text-center"><?php echo NoAdv?></div>
+		<?php }?>
+
+		<?php if($totalPage>1){?>
+		<ul class="pagination">
+			<?php
+			if ($page != 1) { //页数不等于1
+			?>
+			<li><a href="/manage/<?php echo $page - 1;?>/<?php echo $ad_type?>.html">&laquo;</a></li>
+
+			<?php
+			}
+			for ($i=1;$i<=$totalPage;$i++) {  //循环显示出页面
+			?>
+			<li><a href="/manage/<?php echo $i;?>/<?php echo $ad_type?>.html"><?php echo $i ;?></a></li>
+			<?php
+			}
+			if ($page<$totalPage) { //如果page小于总页数,显示下一页链接
+			?>
+			<li><a href="/manage/<?php echo $page + 1;?>/<?php echo $ad_type?>.html">&raquo;</a></li>
+			<?php
+			} 
+
+			mysql_close( $link );
+			?>
+		</ul>
+		<?php }?>
+	
+	</div>
+</div>
+<script>
+$("#buyid").click(function(){
+	location.href="/manage/buy.html";
+});
+$("#sellid").click(function(){
+	location.href="/manage/sell.html";
+});
+var i=<?php echo $page;?>;
+if(i==1){
+	$(".pagination a:eq(0)").css("color", "red");
+}else{
+	$(".pagination a:eq(<?php echo $page;?>)").css("color", "red");
+}
+</script>
+<?php
+include("footer.php");?>
